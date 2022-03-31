@@ -1,0 +1,78 @@
+<!-- Page-Title -->
+
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group float-right m-t-15 show">
+                <ol class="breadcrumb m-0" style="background-color:#f5f5f5; ">
+                    <li class="breadcrumb-item"><a href="index.html">Inventory Audit</a></li>
+                    <li class="breadcrumb-item active">Transaction</li>
+                    <li class="breadcrumb-item active">Monitoring</li>
+                </ol>
+            </div>
+            <h4 class="page-title">Consumptions</h4>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 col-xl-12">
+        <div class="custom-card-box">
+            <div class="card-body">
+                <form ng-submit="Get.LoadConsumptions()">
+                    <div class="row align-items-start">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="control-label">Year</label>
+                                <select select2 ng-model="OnhandFilter.Years"
+                                    ng-options="item as item for item in years" class="form-control-sm"></select>
+                            </div>
+                        </div>
+                     
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="control-label"> Months</label>
+                                <select select2 ng-model="OnhandFilter.month"
+                                    ng-options="item.id as item.name for item in months"
+                                    class="form-control-sm"></select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label class="control-label">Category:</label>
+                                <select class="form-control-sm" ng-model="OnhandFilter.Catcode" ng-disabled="DisStatus"
+                                    required>
+                                    <option selected="selected" value="ALL">ALL</option>
+                                    <option ng-repeat="i in Category" value="{{i.Catcode}}">{{i.itemCategory }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Warehouse/Branch :</label>
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <select class="form-control-sm" ng-model="OnhandFilter.Whscode"
+                                            ng-disabled="DisStatus" required>
+                                            <option selected="selected" value="ALL">ALL</option>
+                                            <option ng-repeat="i in BranchDeptList" value="{{ i.Whscode }}">{{ i.BranchdeptCode }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button type="submit" class="btn waves-effect waves-light btn-success btn-sm"><i class="fa fa-refresh"></i> Load</button>
+                                        <button ng-click="export()" type="button" class="btn waves-effect waves-light  btn-success btn-sm"><i class="fa fa-file-excel"></i> Export</button>
+                                    </div>                                  
+                                </div>
+                            </div>
+                        </div>                     
+                    </div>
+                </form>
+                <div id="listPcountconsumptions" class="ag-theme-balham mt-4" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- end row -->
+
+
