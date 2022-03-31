@@ -1,0 +1,186 @@
+using InventoryAuditAPI.Models.Transaction;
+using InventoryAuditAPI.Helper;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Web;
+using System.Data;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using OfficeOpenXml;
+using System.IO;
+using OfficeOpenXml.Style;
+using System.Drawing;
+
+namespace InventoryAuditAPI.DAL.Transaction
+{
+    public class daConsumptions
+    {
+        private SQLTools tool;
+
+        public List<object> GetConsumptions(string Whscode, string year, int month, string CatCode)
+        {
+            try
+            {
+                List<object> model = new List<object>();
+                tool = new SQLTools(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                var str = "EXEC  Bookkeeping.dbo.spConsumptions @mode, @Whscode, @year,@pd,@Cat";
+                DataTable dt = tool.sqlDT(str
+                    , new SqlParameter("@mode", "Consumptions")
+                    , new SqlParameter("@Whscode", Whscode)
+                    , new SqlParameter("@year", year)
+                    , new SqlParameter("@pd", month)
+                    , new SqlParameter("@Cat", CatCode));
+
+                foreach (var item in dt.Select())
+                {
+                    model.Add(new
+                    {
+                        Months = Convert.ToString(item["Months"]),
+                        Years = Convert.ToString(item["Years"]),
+                        WhsCode = Convert.ToString(item["WhsCode"]),
+                        Itemcode = Convert.ToString(item["Itemcode"]),
+                        ItemDescription = Convert.ToString(item["ItemDescription"]),
+                        Category = Convert.ToString(item["Category"]),
+                        QTYPR = Convert.ToDouble(item["QTYPR"]),
+                        ConsumptionsPr = Convert.ToDouble(item["ConsumptionsPr"]),
+                        QTYCR = Convert.ToDouble(item["QTYCR"]),
+                        ConsumptionsCR = Convert.ToDouble(item["ConsumptionsCR"]),
+                        INCDC = Convert.ToDouble(item["INCDC"]),
+                        Percentage = Convert.ToDouble(item["Percentage"])
+                    });
+                }
+                dt.Dispose();
+                tool.Dispose();
+                return model;
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+        public static MemoryStream Export(string Whscode, string year, int month, string CatCode)
+        {
+            try
+            {
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (ExcelPackage pck = new ExcelPackage())
+                    {
+                        
+                        SQLTools tool = new SQLTools(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                        var str = "EXEC  Bookkeeping.dbo.spConsumptions @mode, @Whscode, @year,@pd,@Cat";
+                        DataTable dt = tool.sqlDT(str
+                            , new SqlParameter("@mode", "Consumptions")
+                            , new SqlParameter("@Whscode", Whscode)
+                            , new SqlParameter("@year", year)
+                            , new SqlParameter("@pd", month)
+                            , new SqlParameter("@Cat", CatCode));
+                
+                        var model = (from DataRow item in dt.Rows
+                            select new
+                            {
+                                Months = Convert.ToString(item["Months"]),
+                                Years = Convert.ToString(item["Years"]),
+                                WhsCode = Convert.ToString(item["WhsCode"]),
+                                Itemcode = Convert.ToString(item["Itemcode"]),
+                                ItemDescription = Convert.ToString(item["ItemDescription"]),
+                                Category = Convert.ToString(item["Category"]),
+                                QTYPR = Convert.ToDouble(item["QTYPR"]),
+                                ConsumptionsPr = Convert.ToDouble(item["ConsumptionsPr"]),
+                                QTYCR = Convert.ToDouble(item["QTYCR"]),
+                                ConsumptionsCR = Convert.ToDouble(item["ConsumptionsCR"]),
+                                INCDC = Convert.ToDouble(item["INCDC"]),
+                                Percentage = Convert.ToDouble(item["Percentage"])
+                            }).ToList();
+                        if (dt.Rows.Count > 0)
+                        {
+                            int row = 1;
+                            int col = 1;
+                            int srow = 1;
+                            int erow = 1;
+                            int counter = 1;
+                            //Create the worksheet 
+                            ExcelWorksheet xlWS;
+                            xlWS = pck.Workbook.Worksheets.Add("Consumptions");
+                            xlWS.Cells.Style.Font.Name = "Calibri";
+                            xlWS.Cells.Style.Font.Size = 9;
+                            xlWS.Cells[row, col++].Value = "Months";
+                            xlWS.Cells[row, col++].Value = "Years";
+                            xlWS.Cells[row, col++].Value = "Itemcode";
+                            xlWS.Cells[row, col++].Value = "ItemDescription";
+                            xlWS.Cells[row, col++].Value = "Category";
+                            xlWS.Cells[row, col++].Value = "QTY(PREVIOUS)";
+                            xlWS.Cells[row, col++].Value = "Consumptions(PREVIOUS)";
+                            xlWS.Cells[row, col++].Value = "QTY(CURRENT)";
+                            xlWS.Cells[row, col++].Value = "Consumptions(CURRENT)";
+                            xlWS.Cells[row, col++].Value = "INCREASE/DECREASE";
+                            xlWS.Cells[row, col++].Value = "Percentage";
+
+                            xlWS.Cells["1:" + row].Style.Font.Bold = true;
+                            for (int i = 1; i <= xlWS.Dimension.End.Column; i++) xlWS.Cells[row, i].Style.Border.BorderAround(ExcelBorderStyle.Medium);
+                            row++;
+                            xlWS.View.FreezePanes(row, 1);
+
+                            srow = row;
+                            foreach (var item in model)
+                            {
+                                col = 1;
+                       
+                                xlWS.Cells[row, col++].Value = item.Months;
+                                xlWS.Cells[row, col++].Value = item.Years;
+                                xlWS.Cells[row, col++].Value = item.Itemcode;
+                                xlWS.Cells[row, col++].Value = item.ItemDescription;
+                                xlWS.Cells[row, col++].Value = item.Category;
+                                xlWS.Cells[row, col++].Value = item.QTYPR;
+                                xlWS.Cells[row, col++].Value = item.ConsumptionsPr;
+                                xlWS.Cells[row, col++].Value = item.QTYCR;
+                                xlWS.Cells[row, col++].Value = item.ConsumptionsCR;
+                                xlWS.Cells[row, col++].Value = item.INCDC;
+                                xlWS.Cells[row, col++].Value = item.Percentage;
+                                row++;
+                            }
+
+                            xlWS.Cells["F:K"].Style.Numberformat.Format = "_(* #,##0.00_);_(* (#,##0.00);_(* " + "-" + "??_);_(@_)";
+
+                            xlWS.Column(1).AutoFit();
+                            xlWS.Column(2).AutoFit();
+                            xlWS.Column(3).AutoFit();
+                            xlWS.Column(4).AutoFit();
+                            xlWS.Column(5).AutoFit();
+                            xlWS.Column(6).AutoFit();
+                            xlWS.Column(7).AutoFit();
+                            xlWS.Column(8).AutoFit();
+                            xlWS.Column(9).AutoFit();
+                            xlWS.Column(10).AutoFit();
+                            xlWS.Column(11).AutoFit();
+                            xlWS.Cells["A:A"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                            xlWS.Cells["E:G"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                            dt.Dispose();
+                            tool.Dispose();
+
+                            pck.SaveAs(ms);
+
+                            return ms;
+                        }
+                        else
+                        {
+                            dt.Dispose();
+                            tool.Dispose();
+                            throw new ApplicationException("Data not found.");
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+
+    }
+}
