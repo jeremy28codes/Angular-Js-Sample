@@ -1,0 +1,46 @@
+'use strict';
+
+var App = angular
+    .module('App')
+    .factory('ConsumptionsServices', Services);
+
+Services.$inject = ['$http', '$httpParamSerializerJQLike', '$localStorage', '$rootScope','serviceBasePath','toastr'];
+
+function Services($http, $httpParamSerializerJQLike, $localStorage, $rootScope, serviceBasePath,toastr) {
+
+    var config = { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } };
+    var config_post = { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } };
+        $http.defaults.headers.common.Authorization = 'Bearer ' + $localStorage.token;
+    var Services = {
+        Get: {
+            Consumptions: function (model,callback) {
+                $http.get(serviceBasePath + 'api/Transaction/Consumptions/GetConsumptionsPcounts?'+ $httpParamSerializerJQLike(model),{}, config)
+                .then(function (response) {
+                    callback({ success: true, data: response.data });
+                },
+                function (response) {
+                    toastr.error(response.data);
+                    callback({ success: false });
+                })
+            },
+            Export: function (model) {
+                window.open(serviceBasePath + 'api/Transaction/Consumptions/Export?' + $httpParamSerializerJQLike(model), '_blank');
+            },
+
+        },
+        Post: {
+          
+        },
+
+        Put: {
+                   
+        },
+        
+        Delete: {
+            
+        },
+            
+    };
+
+    return Services;
+}
