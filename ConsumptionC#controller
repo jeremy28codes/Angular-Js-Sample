@@ -1,0 +1,78 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+using InventoryAuditAPI.Models.Transaction;
+using InventoryAuditAPI.DAL.Transaction;
+using System.Threading;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using System.Web;
+using System.IO;
+using System.Net.Http.Headers;
+
+namespace InventoryAuditAPI.Controllers.Transaction
+{
+    [RoutePrefix("api/Transaction/Consumptions")]
+    public class ConsumptionsController : ApiController
+    {
+        private daConsumptions dal;
+
+        [Authorize]
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////  GET Method REGION  //////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ///
+        #region Get Method Region
+
+        [HttpGet]
+        [Route("GetConsumptionsPcounts")]
+        public IHttpActionResult GetConsumptions([FromUri] string Whscode,  string Years, int month, string Catcode)
+        {
+            try
+            {
+                dal = new daConsumptions();
+                List<object> model = dal.GetConsumptions(Whscode, Years, month, Catcode);
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+
+
+        [HttpGet]
+        [Route("Export")]
+        public HttpResponseMessage Export(string Whscode,string Years, int month, string Catcode)
+        {
+            using (MemoryStream ms = daConsumptions.Export(Whscode,Years,month,Catcode))
+            {
+                HttpResponseMessage result = null;
+                result = Request.CreateResponse(HttpStatusCode.OK);
+                result.Content = new ByteArrayContent(ms.GetBuffer());
+                result.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment");
+                result.Content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                result.Content.Headers.ContentDisposition.FileName = string.Format("Consumptions_{0:yyyy-MM-dd_HH-mm-ss-fff}.xlsx", DateTime.Now);
+
+                return result;
+
+
+
+            }
+
+        }
+
+        #endregion
+
+    }
+}
