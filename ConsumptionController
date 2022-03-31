@@ -1,0 +1,212 @@
+'use strict';
+
+var App = angular
+    .module('App')
+    .controller('Consumptions', Consumptions);
+Consumptions.$inject = ['$scope', '$timeout', '$location', '$rootScope', '$localStorage', 'ConsumptionsServices', 'MasterdataMainServices', 'SweetAlert', 'toastr'];
+
+function Consumptions($scope, $timeout, $location, $rootScope, $localStorage, ConsumptionsServices, MasterdataMainServices, SweetAlert, toastr) {
+    $rootScope.Dashboard = "active";
+    $rootScope.Masterdata = "";
+    $rootScope.Transaction = "";
+    $rootScope.Reports = "";
+    $rootScope.Tools = "";
+
+
+    // console.log('$localStorage.Whscode');
+    $scope.filter = {
+        Whscode: $localStorage.Whscode,
+        Years: $localStorage.Years,
+        month: $localStorage.month,
+        Catcode: $localStorage.Catcode
+    }
+
+
+    var gridoptions = {
+        rowClassRules: {
+            'rag-green-outer': function (params) { return params.data.INCDC > 0; },
+        }
+    }
+    $scope.OnhandFilter = {
+        Whscode: 'ALL',
+        Years: new Date().getFullYear(),
+        month: new Date().getMonth(),
+        Catcode: 'ALL',
+    }
+    var Get = {
+        LoadBranchDeptList: function () {
+            MasterdataMainServices.Get.BranchDeptList(function (response) {
+                if (response.success) {
+                    $scope.BranchDeptList = response.data;
+                } else {
+                    $scope.BranchDeptList = {};
+                }
+            });
+        },
+        getYears: function () {
+            MasterdataMainServices.Get.Year(function (response) {
+                if (response.success) {
+                    $scope.years = response.data;
+                    // console.log(response.data);
+                } else {
+                    $scope.years = {};
+                }
+            });
+        },
+        getmonths: function () {
+            MasterdataMainServices.Get.Month(function (response) {
+                if (response.success) {
+                    $scope.months = response.data;
+                    console.log(response.data);
+                } else {
+                    $scope.months = {};
+                }
+            });
+        },
+        Category: function () {
+            MasterdataMainServices.Get.Category(function (response) {
+                if (response.success) {
+                    $scope.Category = response.data;
+                    // console.log($scope.Category);
+                } else {
+                    $scope.Category = {};
+                }
+            });
+        },     
+        LoadConsumptions: function () {
+            window.swal({
+                title: "Checking...",
+                text: "Please wait",
+                imageUrl: "Src/Plugins/SweetAlert/Loading.gif",
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
+            ConsumptionsServices.Get.Consumptions($scope.OnhandFilter, function (response) {
+                if (response.success) {
+                    gridoptions.api.showLoadingOverlay();
+                    $scope.Consumptions = response.data;
+                    // console.log($scope.Consumptions);
+                    window.swal({
+                        title: "Load Success!",
+                        type: "success",
+                        showConfirmButton: false,
+                        timer: 900
+                    });
+                    // console.log($scope.Consumptions);
+                    gridoptions.api.setRowData($scope.Consumptions);
+                    $scope.loading = false
+                } else {
+                    $scope.Consumptions = {};
+                    window.swal({
+                        title: "No Record Found!",
+                        type: "success",
+                        showConfirmButton: false,
+                        timer: 900
+                    });
+                }
+
+            });
+        }
+    }
+
+    function grid_init() {
+        var columnDefs = [
+            { headerName: 'Month', field: 'Months', width: 100, cellClass: 'text-center' },
+            { headerName: 'Year', field: 'Years', width: 80, cellClass: 'text-center' },
+            { headerName: 'Branch', field: 'WhsCode', width: 100, cellClass: 'text-center' },
+            { headerName: 'ItemCode', field: 'Itemcode', width: 100, cellClass: 'text-center' },
+            { headerName: 'Item Descriptions', field: 'ItemDescription', width: 250, cellClass: 'text-center' },
+            { headerName: 'Category Type', field: 'Category', width: 150, cellClass: 'text-center' },
+            { headerName: 'QTY(Previous)', field: 'QTYPR', width: 150, cellClass: 'text-center' },
+            { headerName: 'Consumptions(Previous)', field: 'ConsumptionsPr', width: 150, cellClass: 'text-center' },
+            { headerName: 'QTY(Current)', field: 'QTYCR', width: 150, cellClass: 'text-center' },
+            { headerName: 'Consumptions(Current)', field: 'ConsumptionsCR', width: 150, cellClass: 'text-center' },
+            { headerName: 'Icrease/Decrease ', field: 'INCDC', width: 150, cellClass: 'text-center' },
+            { headerName: 'Percentage(%)', field: 'Percentage', width: 150, cellClass: 'text-center' },
+        ];
+        gridoptions = {
+            getRowStyle: params => {
+                if (params.data.INCDC > 0) {
+                    return { background: '#f56105', color: 'black' };
+                }
+            }
+        }
+        gridoptions.defaultColDef = {
+            resizable: true,
+            sortable: true,
+        };
+        gridoptions.columnDefs = columnDefs;
+        gridoptions.enableCellTextSelection = true;
+        gridoptions.animateRows = true;
+        gridoptions.rowSelection = 'multiple';
+        var eGridDiv = document.querySelector('#listPcountconsumptions');
+        new agGrid.Grid(eGridDiv, gridoptions);
+        gridoptions.api.showNoRowsOverlay();
+    }
+  function LoadConsumptions() {
+        window.swal({
+            title: "Checking...",
+            text: "Please wait",
+            imageUrl: "Src/Plugins/SweetAlert/Loading.gif",
+            showConfirmButton: false,
+            allowOutsideClick: false
+        });
+        ConsumptionsServices.Get.Consumptions( $scope.filter, function (response) {
+            if (response.success) {
+                gridoptions.api.showLoadingOverlay();
+                $scope.Consumptions = response.data;
+                window.swal({
+                    title: "Load Success!",
+                    type: "success",
+                    showConfirmButton: false,
+                    timer: 900
+                });
+                gridoptions.api.setRowData($scope.Consumptions);
+                $scope.loading = false
+            } else {
+                $scope.Consumptions = {};
+                window.swal({
+                    title: "No Record Found!",
+                    type: "success",
+                    showConfirmButton: false,
+                    timer: 900
+                });
+            }
+        });
+    }
+    $scope.export = function(){
+        ConsumptionsServices.Get.Export($scope.OnhandFilter, function (response) {
+            if (response.success) {
+                gridoptions.api.showLoadingOverlay();
+                window.swal({
+                    title: "export Success!",
+                    type: "success",
+                    showConfirmButton: false,
+                    timer: 900
+                });
+            } else {
+                window.swal({
+                    title: "No Record Found!",
+                    type: "success",
+                    showConfirmButton: false,
+                    timer: 900
+                });
+            }
+        });      
+    }
+    function formatinc(p) {
+        var output = p.value;
+        if (p.value > 0) output = '<span class="badge badge-danger">' + p.value + '</span>';
+        return output;
+    }
+    Get.LoadBranchDeptList();
+    Get.getYears();
+    Get.getmonths();
+    Get.Category();
+    LoadConsumptions();
+    grid_init();
+    $scope.Get = Get;
+
+}
+
+
